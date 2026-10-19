@@ -1,0 +1,133 @@
+<section class="page-head">
+  <div class="page-head__text">
+    <h1>Products</h1>
+    <p>
+      Manage your catalogue. Only active products are listed — deactivating a product hides it from
+      the storefront.
+    </p>
+  </div>
+  <a class="btn" routerLink="/products/new">New product</a>
+</section>
+
+<div class="surface">
+  <div class="toolbar">
+    <label class="sr-only" for="product-search">Search products</label>
+    <input
+      id="product-search"
+      class="input toolbar__grow"
+      type="search"
+      placeholder="Search by name, SKU or description…"
+      [formControl]="searchControl"
+    />
+
+    <label class="sr-only" for="product-category">Filter by category</label>
+    <select
+      id="product-category"
+      class="select"
+      [value]="''"
+      (change)="onCategoryChange($any($event.target).value)"
+    >
+      <option value="">All categories</option>
+      @for (category of categories(); track category.id) {
+        <option [value]="category.id">{{ category.name }}</option>
+      }
+    </select>
+
+    <span class="tag" title="The API lists active products only">Status: Active</span>
+  </div>
+
+  @if (loading()) {
+    <div class="table-wrap">
+      <div class="list-loading">
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <app-skeleton height="3.25rem" />
+        }
+      </div>
+    </div>
+  } @else if (error()) {
+    <app-error-state
+      title="Could not load products"
+      message="The catalogue service did not respond. Please try again."
+      (retry)="load()"
+    />
+  } @else if (!products().length) {
+    <app-empty-state
+      title="No products found"
+      [subtitle]="
+        searchControl.value || ''
+          ? 'No products match your search or filter.'
+          : 'Create your first product to get started.'
+      "
+      actionLabel="New product"
+      (action)="goNew()"
+    ></app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Product</th>
+            <th scope="col">SKU</th>
+            <th scope="col">Price</th>
+            <th scope="col">Stock</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (product of products(); track product.id) {
+            <tr>
+              <td>
+                <div class="cell-product">
+                  <app-product-thumb [productId]="product.id" [name]="product.name" />
+                  <div>
+                    <div class="cell-strong">{{ product.name }}</div>
+                    <div class="cell-mono">{{ product.slug }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="cell-mono">{{ product.sku }}</td>
+              <td class="cell-strong">{{ formatCurrency(product.price) }}</td>
+              <td>{{ product.stock_quantity }}</td>
+              <td>
+                <span [class]="toneClass(productStatusTone(product.status))">
+                  {{ productStatusLabel(product.status) }}
+                </span>
+              </td>
+              <td>
+                <div class="table__actions">
+                  <a class="btn ghost small" [routerLink]="['/products', product.id]">Edit</a>
+                  <button class="btn danger small" type="button" (click)="deactivate(product)">
+                    Deactivate
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <span class="pager__info">Page {{ pageIndex() + 1 }}</span>
+      <div class="pager__controls">
+        <button
+          class="btn ghost small"
+          type="button"
+          [disabled]="!canGoPrevious() || loading()"
+          (click)="previousPage()"
+        >
+          Previous
+        </button>
+        <button
+          class="btn ghost small"
+          type="button"
+          [disabled]="!hasMore() || loading()"
+          (click)="nextPage()"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  }
+</div>

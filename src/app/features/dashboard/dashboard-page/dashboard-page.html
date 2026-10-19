@@ -1,0 +1,284 @@
+<section class="page-head">
+  <div class="page-head__text">
+    <h1>Dashboard</h1>
+    <p>
+      Business performance for the selected period. Revenue reflects confirmed orders; refunds and
+      category-level sales are not available yet.
+    </p>
+  </div>
+  <div class="page-head__actions">
+    <a class="btn ghost" routerLink="/reports">Reports &amp; export</a>
+    <button class="btn" type="button" (click)="refresh()">Refresh</button>
+  </div>
+</section>
+
+<div class="surface range-toolbar">
+  <app-range-bar [value]="range()" (valueChange)="onRangeChange($event)" />
+  <div class="segmented" role="group" aria-label="Chart granularity">
+    <button type="button" [class.active]="bucket() === 'day'" (click)="setBucket('day')">Day</button>
+    <button type="button" [class.active]="bucket() === 'month'" (click)="setBucket('month')">
+      Month
+    </button>
+  </div>
+</div>
+
+<div class="stat-grid kpi-grid">
+  <div class="surface stat-card">
+    <span class="stat-card__label">Gross sales</span>
+    @if (loading()) {
+      <app-skeleton height="2.1rem" />
+    } @else {
+      <span class="stat-card__value">{{ money(orderSummary()?.grossSales ?? 0) }}</span>
+    }
+    <span class="stat-card__hint">Confirmed orders in range.</span>
+  </div>
+
+  <div class="surface stat-card">
+    <span class="stat-card__label">Confirmed orders</span>
+    @if (loading()) {
+      <app-skeleton height="2.1rem" />
+    } @else {
+      <span class="stat-card__value">{{ countFormatter(orderSummary()?.confirmedOrders ?? 0) }}</span>
+    }
+    <span class="stat-card__hint">Excludes pending and cancelled.</span>
+  </div>
+
+  <div class="surface stat-card">
+    <span class="stat-card__label">Average order value</span>
+    @if (loading()) {
+      <app-skeleton height="2.1rem" />
+    } @else {
+      <span class="stat-card__value">{{ money(orderSummary()?.averageOrderValue ?? 0) }}</span>
+    }
+    <span class="stat-card__hint">Gross sales ÷ confirmed orders.</span>
+  </div>
+
+  <div class="surface stat-card">
+    <span class="stat-card__label">Payment success rate</span>
+    @if (loading()) {
+      <app-skeleton height="2.1rem" />
+    } @else {
+      <span class="stat-card__value">{{ (paymentSummary()?.successRate ?? 0).toFixed(1) }}%</span>
+    }
+    <span class="stat-card__hint">Success ÷ (success + failed).</span>
+  </div>
+
+  <div class="surface stat-card">
+    <span class="stat-card__label">New customers</span>
+    @if (loading()) {
+      <app-skeleton height="2.1rem" />
+    } @else {
+      <span class="stat-card__value">{{ countFormatter(customerSummary()?.newCustomers ?? 0) }}</span>
+    }
+    <span class="stat-card__hint">Registered in the selected range.</span>
+  </div>
+
+  <div class="surface stat-card">
+    <span class="stat-card__label">Active products</span>
+    @if (productLoading()) {
+      <app-skeleton height="2.1rem" />
+    } @else {
+      <span class="stat-card__value">{{ countFormatter(productSummary()?.activeProducts ?? 0) }}</span>
+    }
+    <span class="stat-card__hint">Visible on the storefront.</span>
+  </div>
+</div>
+
+<div class="chart-layout">
+  <section class="surface chart-card">
+    <header class="chart-card__head">
+      <div>
+        <h2>Gross sales over time</h2>
+        <p>Confirmed orders only.</p>
+      </div>
+    </header>
+    <app-line-chart
+      [labels]="periodLabels"
+      [series]="grossSalesSeries"
+      [formatValue]="moneyFormatter"
+      [height]="260"
+      ariaLabel="Gross sales over time"
+      emptyMessage="No confirmed sales in this period."
+    />
+  </section>
+
+  <section class="surface chart-card">
+    <header class="chart-card__head">
+      <div>
+        <h2>Order status</h2>
+        <p>Distribution across all statuses.</p>
+      </div>
+    </header>
+    <app-donut-chart
+      [segments]="orderStatusSegments"
+      [centerValue]="totalOrdersLabel"
+      centerLabel="orders"
+      ariaLabel="Order status distribution"
+      emptyMessage="No orders in this period."
+    />
+  </section>
+</div>
+
+<div class="chart-layout">
+  <section class="surface chart-card">
+    <header class="chart-card__head">
+      <div>
+        <h2>Orders over time</h2>
+        <p>All orders versus confirmed orders.</p>
+      </div>
+    </header>
+    <app-line-chart
+      [labels]="periodLabels"
+      [series]="orderSeries"
+      [height]="260"
+      [formatValue]="countFormatter"
+      ariaLabel="Orders over time"
+      emptyMessage="No orders in this period."
+    />
+  </section>
+
+  <section class="surface chart-card">
+    <header class="chart-card__head">
+      <div>
+        <h2>Payment status</h2>
+        <p>Gateway payment outcomes.</p>
+      </div>
+    </header>
+    <app-donut-chart
+      [segments]="paymentStatusSegments"
+      [centerValue]="paymentTotalLabel"
+      centerLabel="payments"
+      ariaLabel="Payment status distribution"
+      emptyMessage="No payments in this period."
+    />
+  </section>
+</div>
+
+<section class="surface chart-card">
+  <header class="chart-card__head">
+    <div>
+      <h2>Payment outcomes over time</h2>
+      <p>Successful versus failed payment attempts.</p>
+    </div>
+  </header>
+  <app-line-chart
+    [labels]="paymentPeriodLabels"
+    [series]="paymentSeries"
+    [height]="240"
+    [formatValue]="countFormatter"
+    ariaLabel="Payment outcomes over time"
+    emptyMessage="No payment activity in this period."
+  />
+</section>
+
+<section class="surface chart-card report-section">
+  <header class="chart-card__head">
+    <div>
+      <h2>Top products</h2>
+      <p>Best sellers by revenue in the selected range.</p>
+    </div>
+    <a class="btn ghost small" routerLink="/reports">View as table</a>
+  </header>
+
+  @if (loading()) {
+    <app-skeleton height="14rem" />
+  } @else if (topProducts().length === 0) {
+    <app-empty-state
+      title="No product sales yet"
+      subtitle="Once orders with line items are confirmed, your best sellers will appear here."
+    />
+  } @else {
+    <app-bar-chart
+      [items]="topProductBars"
+      [height]="280"
+      [formatValue]="compactMoney"
+      ariaLabel="Top products by revenue"
+    />
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Units sold</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (product of topProducts(); track product.productId) {
+            <tr>
+              <td class="cell-strong">{{ product.productName }}</td>
+              <td class="cell-mono">{{ product.sku }}</td>
+              <td>{{ countFormatter(product.unitsSold) }}</td>
+              <td>{{ money(product.revenue) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="stat-grid kpi-grid report-section">
+  <div class="surface stat-card">
+    <span class="stat-card__label">Active products</span>
+    @if (productLoading()) {
+      <app-skeleton height="2.1rem" />
+    } @else {
+      <span class="stat-card__value">{{ countFormatter(productSummary()?.activeProducts ?? 0) }}</span>
+    }
+    <span class="stat-card__hint">Published on the storefront.</span>
+  </div>
+
+  <div class="surface stat-card">
+    <span class="stat-card__label">Inactive products</span>
+    @if (productLoading()) {
+      <app-skeleton height="2.1rem" />
+    } @else {
+      <span class="stat-card__value">{{ countFormatter(productSummary()?.inactiveProducts ?? 0) }}</span>
+    }
+    <span class="stat-card__hint">Hidden from the storefront.</span>
+  </div>
+
+  <div class="surface stat-card">
+    <span class="stat-card__label">Low stock</span>
+    @if (productLoading()) {
+      <app-skeleton height="2.1rem" />
+    } @else {
+      <span class="stat-card__value">{{ countFormatter(productSummary()?.activeLowStock ?? 0) }}</span>
+    }
+    <span class="stat-card__hint">Active items at or below the threshold.</span>
+  </div>
+
+  <div class="surface stat-card">
+    <span class="stat-card__label">Out of stock</span>
+    @if (productLoading()) {
+      <app-skeleton height="2.1rem" />
+    } @else {
+      <span class="stat-card__value">{{ countFormatter(productSummary()?.activeOutOfStock ?? 0) }}</span>
+    }
+    <span class="stat-card__hint">Active items with zero stock.</span>
+  </div>
+
+  <div class="surface stat-card">
+    <span class="stat-card__label">Categories</span>
+    @if (productLoading()) {
+      <app-skeleton height="2.1rem" />
+    } @else {
+      <span class="stat-card__value">{{ countFormatter(productSummary()?.totalCategories ?? 0) }}</span>
+    }
+    <span class="stat-card__hint">Total category groups.</span>
+  </div>
+</section>
+
+<div class="data-unavailable" role="note">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+    <path d="M12 8v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+    <circle cx="12" cy="16.4" r="1" fill="currentColor" />
+  </svg>
+  <span>
+    Category-level sales and refund totals are not available yet. Stock metrics are derived from
+    product records because the inventory service is currently offline.
+  </span>
+</div>

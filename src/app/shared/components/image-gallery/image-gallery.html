@@ -1,0 +1,75 @@
+<div class="gallery-panel">
+  <div
+    class="gallery-dropzone dropzone"
+    [class.is-dragover]="dragging()"
+    (drop)="onDrop($event)"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+  >
+    <p class="dropzone__title">Add product images</p>
+    <p class="dropzone__hint">
+      Drag &amp; drop or choose files. PNG, JPEG or WebP, up to {{ maxLabel }} each.
+    </p>
+
+    <label class="field dropzone__alt">
+      <span class="field-label">Caption (optional)</span>
+      <input
+        class="input"
+        type="text"
+        [value]="altText()"
+        (input)="altText.set($any($event.target).value)"
+        placeholder="e.g. Front view"
+        [disabled]="uploading()"
+      />
+    </label>
+
+    <label class="btn" [class.disabled]="uploading()">
+      {{ uploading() ? 'Uploading…' : 'Choose files' }}
+      <input
+        class="sr-only"
+        type="file"
+        [attr.accept]="accept"
+        multiple
+        [disabled]="uploading()"
+        (change)="onFilesSelected($event)"
+      />
+    </label>
+  </div>
+
+  @if (uploading()) {
+    <div
+      class="progress"
+      role="progressbar"
+      [attr.aria-valuenow]="progress()"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <div class="progress__bar" [style.width.%]="progress()"></div>
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="field-hint">Loading images…</p>
+  } @else if (!images().length) {
+    <p class="field-hint">No images yet. Upload the first one above.</p>
+  } @else {
+    <div class="gallery">
+      @for (image of images(); track image.id) {
+        <figure class="gallery-item">
+          <span class="badge badge-primary gallery-item__badge">#{{ image.position + 1 }}</span>
+          <img
+            class="gallery-item__img"
+            [src]="resolveUrl(image.url)"
+            [alt]="image.altText || 'Product image'"
+            loading="lazy"
+          />
+          <figcaption class="gallery-item__body">
+            <span class="gallery-item__caption">{{ image.altText || 'No caption' }}</span>
+            <span class="gallery-item__caption">{{ image.mimeType }}</span>
+            <button class="link danger" type="button" (click)="remove(image)">Delete</button>
+          </figcaption>
+        </figure>
+      }
+    </div>
+  }
+</div>

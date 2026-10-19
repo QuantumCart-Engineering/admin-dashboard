@@ -1,0 +1,184 @@
+<section class="page-head">
+  <div class="page-head__text">
+    <a class="link" routerLink="/products">← Back to products</a>
+    <h1>{{ isEdit() ? 'Edit product' : 'New product' }}</h1>
+    <p>
+      @if (isEdit()) {
+        Update the product details. Images can be managed below. Deactivating hides the product from
+        the storefront.
+      } @else {
+        Add a new product to your catalogue. Save it first, then upload images.
+      }
+    </p>
+  </div>
+</section>
+
+@if (loading()) {
+  <div class="surface form-loading">
+    <app-skeleton height="2.5rem" />
+    <app-skeleton height="2.5rem" />
+    <app-skeleton height="6rem" />
+  </div>
+} @else if (loadError()) {
+  <app-error-state
+    title="Could not load product"
+    message="The product could not be loaded. It may have been removed."
+    (retry)="reload()"
+  />
+} @else {
+  <div class="form-layout">
+    <form class="surface" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="panel-head">
+        <h2>Product details</h2>
+        <p>Fields marked with <span class="required">*</span> are required.</p>
+      </div>
+
+      <div class="panel-body form-grid">
+        <div class="field">
+          <label class="field-label" for="name">Name <span class="required">*</span></label>
+          <input id="name" class="input" type="text" formControlName="name" placeholder="e.g. Quantum Wireless Headphones" />
+          @if (showError('name')) {
+            <p class="error-text" role="alert">{{ fieldError('name') }}</p>
+          }
+        </div>
+
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label" for="sku">SKU <span class="required">*</span></label>
+            <input id="sku" class="input" type="text" formControlName="sku" placeholder="QC-AUD-001" />
+            @if (showError('sku')) {
+              <p class="error-text" role="alert">{{ fieldError('sku') }}</p>
+            }
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="currency">Currency</label>
+            <input id="currency" class="input" type="text" value="INR (₹)" disabled />
+            <p class="field-hint">Currency is fixed by the backend.</p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="description">Description</label>
+          <textarea
+            id="description"
+            class="textarea"
+            formControlName="description"
+            placeholder="Describe the product for your storefront."
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label" for="price">Price (₹) <span class="required">*</span></label>
+            <input id="price" class="input" type="number" step="0.01" min="0.01" formControlName="price" placeholder="0.00" />
+            @if (showError('price')) {
+              <p class="error-text" role="alert">{{ fieldError('price') }}</p>
+            }
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="stockQuantity">Stock quantity <span class="required">*</span></label>
+            <input
+              id="stockQuantity"
+              class="input"
+              type="number"
+              step="1"
+              min="0"
+              formControlName="stockQuantity"
+              placeholder="0"
+            />
+            @if (showError('stockQuantity')) {
+              <p class="error-text" role="alert">{{ fieldError('stockQuantity') }}</p>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label">Categories <span class="required">*</span></span>
+          @if (!categories().length) {
+            <p class="field-hint">No categories available. Create a category first.</p>
+          } @else {
+            <div class="toggle-group">
+              @for (category of categories(); track category.id) {
+                <label class="chip-check" [class.is-checked]="isCategorySelected(category.id)">
+                  <input
+                    type="checkbox"
+                    [checked]="isCategorySelected(category.id)"
+                    (change)="toggleCategory(category.id, $any($event.target).checked)"
+                  />
+                  {{ category.name }}
+                </label>
+              }
+            </div>
+          }
+          @if (categoryError()) {
+            <p class="error-text" role="alert">Select at least one category.</p>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button class="btn ghost" type="button" (click)="cancel()">Cancel</button>
+          <button class="btn" type="submit" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create product' }}
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <aside class="form-side">
+      @if (isEdit() && product(); as p) {
+        <div class="surface">
+          <div class="panel-head">
+            <h2>Status</h2>
+          </div>
+          <div class="panel-body status-list">
+            <div class="status-row">
+              <span>State</span>
+              <span [class]="toneClass(productStatusTone(p.status))">{{ productStatusLabel(p.status) }}</span>
+            </div>
+            <div class="status-row">
+              <span>Price</span>
+              <span class="cell-strong">{{ formatCurrency(p.price) }}</span>
+            </div>
+            <div class="status-row">
+              <span>Created</span>
+              <span>{{ shortDate(p.created_at) }}</span>
+            </div>
+            <div class="status-row">
+              <span>Updated</span>
+              <span>{{ shortDate(p.updated_at) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="surface danger-panel">
+          <div class="panel-body">
+            <h3>Danger zone</h3>
+            <p class="field-hint">Deactivating removes this product from the storefront.</p>
+            <button class="btn danger" type="button" (click)="deactivate()">Deactivate product</button>
+          </div>
+        </div>
+      } @else {
+        <div class="surface">
+          <div class="panel-body">
+            <h3>Images</h3>
+            <p class="field-hint">Save the product to add images.</p>
+          </div>
+        </div>
+      }
+    </aside>
+  </div>
+
+  @if (isEdit() && productId(); as id) {
+    <div class="surface images-panel">
+      <div class="panel-head">
+        <h2>Product images</h2>
+        <p>The lowest-position image is used as the thumbnail in listings.</p>
+      </div>
+      <div class="panel-body">
+        <app-image-gallery [productId]="id" (changed)="onImagesChanged()" />
+      </div>
+    </div>
+  }
+}

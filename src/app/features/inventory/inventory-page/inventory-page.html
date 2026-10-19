@@ -1,0 +1,116 @@
+<section class="page-head">
+  <div class="page-head__text">
+    <h1>Inventory</h1>
+    <p>
+      Look up the live stock recorded by the inventory service for a product. Inventory is read-only
+      here — it is adjusted by the ordering workflow.
+    </p>
+  </div>
+</section>
+
+<div class="inventory-layout">
+  <div class="surface">
+    <div class="panel-head">
+      <h2>Find a product</h2>
+      <p>Search the catalogue, then select a product to view its inventory.</p>
+    </div>
+    <div class="panel-body">
+      <label class="sr-only" for="inventory-search">Search products</label>
+      <input
+        id="inventory-search"
+        class="input"
+        type="search"
+        placeholder="Search by name or SKU…"
+        [formControl]="searchControl"
+      />
+
+      @if (searching()) {
+        <div class="search-loading">
+          <app-skeleton height="3rem" />
+          <app-skeleton height="3rem" />
+        </div>
+      } @else if (results().length) {
+        <ul class="result-list">
+          @for (product of results(); track product.id) {
+            <li>
+              <button
+                type="button"
+                class="result"
+                [class.is-active]="selected()?.id === product.id"
+                (click)="select(product)"
+              >
+                <span class="result__main">
+                  <span class="cell-strong">{{ product.name }}</span>
+                  <span class="cell-mono">{{ product.sku }}</span>
+                </span>
+                <span class="result__meta">{{ formatCurrency(product.price) }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      } @else if (searched()) {
+        <p class="field-hint">No products match your search.</p>
+      } @else {
+        <p class="field-hint">Start typing to search the catalogue.</p>
+      }
+    </div>
+  </div>
+
+  <div class="surface">
+    <div class="panel-head">
+      <h2>Stock levels</h2>
+      @if (selected(); as product) {
+        <p>{{ product.name }}</p>
+      } @else {
+        <p>Select a product to view its inventory.</p>
+      }
+    </div>
+    <div class="panel-body">
+      @switch (state()) {
+        @case ('idle') {
+          <app-empty-state
+            title="No product selected"
+            subtitle="Choose a product from the list to see its available and reserved stock."
+          />
+        }
+        @case ('loading') {
+          <div class="stock-loading">
+            <app-skeleton height="5rem" />
+            <app-skeleton height="5rem" />
+          </div>
+        }
+        @case ('loaded') {
+          @if (inventory(); as inv) {
+            <div class="stock-grid">
+              <div class="stock-card">
+                <span class="stat-card__label">Available</span>
+                <span class="stat-card__value">{{ inv.available_quantity }}</span>
+              </div>
+              <div class="stock-card">
+                <span class="stat-card__label">Reserved</span>
+                <span class="stat-card__value">{{ inv.reserved_quantity }}</span>
+              </div>
+            </div>
+            <p class="field-hint">Inventory record ID: <span class="cell-mono">{{ inv.id }}</span></p>
+            <button class="btn ghost small" type="button" (click)="clearSelection()">Clear</button>
+          }
+        }
+        @case ('not-found') {
+          <app-empty-state
+            title="No inventory record"
+            subtitle="This product does not have an inventory record yet."
+          />
+        }
+        @case ('unavailable') {
+          <div class="notice notice--warning" role="alert">
+            <strong>Inventory service unavailable</strong>
+            <p>{{ errorMessage() }}</p>
+          </div>
+        }
+        @case ('error') {
+          <app-error-state title="Could not load inventory" [message]="errorMessage()" (retry)="clearSelection()" />
+        }
+      }
+    </div>
+  </div>
+</div>

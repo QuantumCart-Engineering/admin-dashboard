@@ -1,0 +1,124 @@
+<section class="page-head">
+  <div class="page-head__text">
+    <h1>Categories</h1>
+    <p>Organise products into categories. Deleting a category deactivates it.</p>
+  </div>
+  <button class="btn" type="button" (click)="openCreate()">New category</button>
+</section>
+
+<div class="surface">
+  @if (loading()) {
+    <div class="list-loading">
+      @for (row of [1, 2, 3, 4]; track row) {
+        <app-skeleton height="3rem" />
+      }
+    </div>
+  } @else if (error()) {
+    <app-error-state
+      title="Could not load categories"
+      message="The catalogue service did not respond. Please try again."
+      (retry)="load()"
+    />
+  } @else if (!categories().length) {
+    <app-empty-state
+      title="No categories yet"
+      subtitle="Create your first category to start organising products."
+      actionLabel="New category"
+      (action)="openCreate()"
+    />
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Slug</th>
+            <th scope="col">Parent</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (category of categories(); track category.id) {
+            <tr>
+              <td>
+                <div class="cell-strong">{{ category.name }}</div>
+                @if (category.description) {
+                  <div class="cell-mono">{{ category.description }}</div>
+                }
+              </td>
+              <td class="cell-mono">{{ category.slug }}</td>
+              <td>{{ parentName(category.parentId) }}</td>
+              <td>
+                <span [class]="toneClass(categoryStatusTone(category.status))">
+                  {{ categoryStatusLabel(category.status) }}
+                </span>
+              </td>
+              <td>
+                <div class="table__actions">
+                  <button class="btn ghost small" type="button" (click)="openEdit(category)">
+                    Edit
+                  </button>
+                  <button class="btn danger small" type="button" (click)="remove(category)">
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (formOpen()) {
+  <div class="modal-backdrop" (click)="closeForm()">
+    <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2>{{ editing() ? 'Edit category' : 'New category' }}</h2>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="form-grid">
+        <div class="field">
+          <label class="field-label" for="category-name">Name <span class="required">*</span></label>
+          <input id="category-name" class="input" type="text" formControlName="name" placeholder="e.g. Audio" />
+          @if (nameError()) {
+            <p class="error-text" role="alert">
+              @if (form.controls.name.errors?.['required']) {
+                Name is required.
+              } @else {
+                Name must be at most 150 characters.
+              }
+            </p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="category-description">Description</label>
+          <textarea
+            id="category-description"
+            class="textarea"
+            formControlName="description"
+            placeholder="Optional description"
+          ></textarea>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="category-parent">Parent category</label>
+          <select id="category-parent" class="select" formControlName="parentId">
+            <option value="">No parent (top level)</option>
+            @for (option of parentOptions(); track option.id) {
+              <option [value]="option.id">{{ option.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="modal__actions">
+          <button class="btn ghost" type="button" (click)="closeForm()">Cancel</button>
+          <button class="btn" type="submit" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : editing() ? 'Save changes' : 'Create category' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

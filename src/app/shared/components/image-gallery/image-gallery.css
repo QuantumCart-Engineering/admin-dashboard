@@ -1,0 +1,30 @@
+.gallery-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qc-space-4);
+}
+
+.dropzone__title {
+  font-weight: 600;
+  color: var(--qc-text-strong);
+}
+
+.dropzone__hint {
+  font-size: 0.85rem;
+  margin-bottom: var(--qc-space-4);
+}
+
+.dropzone__alt {
+  max-width: 22rem;
+  margin: 0 auto var(--qc-space-4);
+  text-align: left;
+}
+
+.dropzone label.btn {
+  cursor: pointer;
+}
+
+.dropzone label.btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

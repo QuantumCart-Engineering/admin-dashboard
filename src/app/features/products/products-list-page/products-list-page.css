@@ -1,0 +1,6 @@
+.list-loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qc-space-3);
+  padding: var(--qc-space-5);
+}

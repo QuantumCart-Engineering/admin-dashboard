@@ -1,0 +1,295 @@
+<section class="page-head">
+  <div class="page-head__text">
+    <h1>Reports</h1>
+    <p>
+      Detailed analytics for the selected period. Each table can be exported as CSV for offline
+      analysis.
+    </p>
+  </div>
+  <div class="page-head__actions">
+    <button class="btn" type="button" (click)="refresh()">Refresh</button>
+  </div>
+</section>
+
+<div class="surface range-toolbar">
+  <app-range-bar [value]="range()" (valueChange)="onRangeChange($event)" />
+  <div class="segmented" role="group" aria-label="Report granularity">
+    <button type="button" [class.active]="bucket() === 'day'" (click)="setBucket('day')">Day</button>
+    <button type="button" [class.active]="bucket() === 'month'" (click)="setBucket('month')">
+      Month
+    </button>
+  </div>
+</div>
+
+<section class="surface report-panel">
+  <header class="report-section__head">
+    <div>
+      <h2>Order summary</h2>
+      <p>Order totals and revenue for the range.</p>
+    </div>
+    <button class="btn ghost small" type="button" (click)="exportOrderSummary()">Export CSV</button>
+  </header>
+  @if (loading()) {
+    <div class="panel-body"><app-skeleton height="12rem" /></div>
+  } @else {
+    <div class="table-wrap">
+      <table class="table table--kv">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of orderSummaryRows(); track row.label) {
+            <tr>
+              <td>{{ row.label }}</td>
+              <td class="cell-strong">{{ row.value }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="surface report-panel">
+  <header class="report-section__head">
+    <div>
+      <h2>Orders over time</h2>
+      <p>Grouped by {{ bucket() }}.</p>
+    </div>
+    <button class="btn ghost small" type="button" (click)="exportOrderTimeseries()">
+      Export CSV
+    </button>
+  </header>
+  @if (loading()) {
+    <div class="panel-body"><app-skeleton height="12rem" /></div>
+  } @else if (!orderTimeseries() || orderTimeseries()!.points.length === 0) {
+    <app-empty-state
+      title="No orders in this period"
+      subtitle="Confirmed and pending orders will appear here once they exist."
+    />
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Orders</th>
+            <th>Confirmed</th>
+            <th>Gross sales</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (point of orderTimeseries()!.points; track point.period) {
+            <tr>
+              <td class="cell-strong">{{ periodLabel(point.period) }}</td>
+              <td>{{ point.orders }}</td>
+              <td>{{ point.confirmedOrders }}</td>
+              <td>{{ money(point.grossSales) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="surface report-panel">
+  <header class="report-section__head">
+    <div>
+      <h2>Top products</h2>
+      <p>Best sellers by revenue.</p>
+    </div>
+    <button class="btn ghost small" type="button" (click)="exportTopProducts()">Export CSV</button>
+  </header>
+  @if (loading()) {
+    <div class="panel-body"><app-skeleton height="12rem" /></div>
+  } @else if (!topProducts() || topProducts()!.products.length === 0) {
+    <app-empty-state
+      title="No product sales yet"
+      subtitle="Confirmed order line items will appear here."
+    />
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Units sold</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (product of topProducts()!.products; track product.productId) {
+            <tr>
+              <td class="cell-strong">{{ product.productName }}</td>
+              <td class="cell-mono">{{ product.sku }}</td>
+              <td>{{ product.unitsSold }}</td>
+              <td>{{ money(product.revenue) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="surface report-panel">
+  <header class="report-section__head">
+    <div>
+      <h2>Payment summary</h2>
+      <p>Gateway payment outcomes for the range.</p>
+    </div>
+    <button class="btn ghost small" type="button" (click)="exportPaymentSummary()">
+      Export CSV
+    </button>
+  </header>
+  @if (loading()) {
+    <div class="panel-body"><app-skeleton height="12rem" /></div>
+  } @else {
+    <div class="table-wrap">
+      <table class="table table--kv">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of paymentSummaryRows(); track row.label) {
+            <tr>
+              <td>{{ row.label }}</td>
+              <td class="cell-strong">{{ row.value }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="surface report-panel">
+  <header class="report-section__head">
+    <div>
+      <h2>Payments over time</h2>
+      <p>Grouped by {{ bucket() }}.</p>
+    </div>
+    <button class="btn ghost small" type="button" (click)="exportPaymentTimeseries()">
+      Export CSV
+    </button>
+  </header>
+  @if (loading()) {
+    <div class="panel-body"><app-skeleton height="12rem" /></div>
+  } @else if (!paymentTimeseries() || paymentTimeseries()!.points.length === 0) {
+    <app-empty-state
+      title="No payments in this period"
+      subtitle="Gateway payment attempts will appear here once they exist."
+    />
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Successful</th>
+            <th>Failed</th>
+            <th>Successful amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (point of paymentTimeseries()!.points; track point.period) {
+            <tr>
+              <td class="cell-strong">{{ periodLabel(point.period) }}</td>
+              <td>{{ point.success }}</td>
+              <td>{{ point.failed }}</td>
+              <td>{{ money(point.amount) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="surface report-panel">
+  <header class="report-section__head">
+    <div>
+      <h2>Customer summary</h2>
+      <p>Customer base and new registrations in the range.</p>
+    </div>
+    <button class="btn ghost small" type="button" (click)="exportCustomerSummary()">
+      Export CSV
+    </button>
+  </header>
+  @if (loading()) {
+    <div class="panel-body"><app-skeleton height="10rem" /></div>
+  } @else {
+    <div class="table-wrap">
+      <table class="table table--kv">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of customerSummaryRows(); track row.label) {
+            <tr>
+              <td>{{ row.label }}</td>
+              <td class="cell-strong">{{ row.value }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="surface report-panel">
+  <header class="report-section__head">
+    <div>
+      <h2>Catalogue summary</h2>
+      <p>Product and category counts (all-time).</p>
+    </div>
+    <button class="btn ghost small" type="button" (click)="exportProductSummary()">
+      Export CSV
+    </button>
+  </header>
+  @if (loading()) {
+    <div class="panel-body"><app-skeleton height="12rem" /></div>
+  } @else {
+    <div class="table-wrap">
+      <table class="table table--kv">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of productSummaryRows(); track row.label) {
+            <tr>
+              <td>{{ row.label }}</td>
+              <td class="cell-strong">{{ row.value }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<div class="data-unavailable" role="note">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+    <path d="M12 8v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+    <circle cx="12" cy="16.4" r="1" fill="currentColor" />
+  </svg>
+  <span>
+    Category-level sales and refund totals are not available yet. Stock metrics are derived from
+    product records because the inventory service is currently offline.
+  </span>
+</div>

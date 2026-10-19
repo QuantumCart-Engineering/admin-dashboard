@@ -1,0 +1,98 @@
+<div class="admin-shell" [class.nav-open]="navOpen()">
+  <div class="admin-scrim" (click)="closeNav()" aria-hidden="true"></div>
+
+  <aside class="admin-sidebar" aria-label="Admin navigation">
+    <div class="admin-brand">
+      <img src="assets/images/logo-icon.png" alt="QuantumCart" width="36" height="36" />
+      <span class="admin-brand__text">
+        <span class="admin-brand__title">QuantumCart</span>
+        <span class="admin-brand__sub">Admin</span>
+      </span>
+    </div>
+
+    <nav class="admin-nav">
+      @for (item of navItems; track item.link) {
+        <a
+          class="admin-nav__link"
+          [routerLink]="item.link"
+          routerLinkActive="active"
+          (click)="closeNav()"
+        >
+          @switch (item.icon) {
+            @case ('grid') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+                <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+                <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+                <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+              </svg>
+            }
+            @case ('box') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                <path d="M4 7.5 12 12l8-4.5M12 12v9" stroke="currentColor" stroke-width="1.6" />
+              </svg>
+            }
+            @case ('tag') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3.5 11.5 11 4h8.5V12.5L12 20l-8.5-8.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                <circle cx="15.5" cy="8.5" r="1.4" stroke="currentColor" stroke-width="1.4" />
+              </svg>
+            }
+            @case ('layers') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3 3 7.5l9 4.5 9-4.5L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                <path d="m3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+              </svg>
+            }
+            @case ('report') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 20V4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                <path d="M4 20h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                <path d="M8 20v-6M12.5 20V8M17 20v-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            }
+          }
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="admin-sidebar__footer">
+      <p>Signed in as</p>
+      <p class="cell-strong">{{ user()?.email }}</p>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <button
+        class="icon-btn admin-menu-btn"
+        type="button"
+        aria-label="Toggle navigation"
+        (click)="toggleNav()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <span class="admin-topbar__title">{{ pageTitle() }}</span>
+
+      <span class="admin-topbar__spacer"></span>
+
+      <div class="admin-user">
+        <span class="admin-user__meta">
+          <span class="admin-user__name">{{ displayName() }}</span>
+          <span class="admin-user__role">{{ user()?.role }}</span>
+        </span>
+        <span class="admin-user__avatar" aria-hidden="true">{{ userInitials() }}</span>
+        <button class="btn ghost small" type="button" (click)="logout()">Sign out</button>
+      </div>
+    </header>
+
+    <main id="main-content" tabindex="-1" class="admin-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
