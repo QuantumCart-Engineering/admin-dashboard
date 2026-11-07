@@ -31,8 +31,8 @@ describe('route guards', () => {
 
   afterEach(() => localStorage.clear());
 
-  const run = (guard: CanActivateFn) =>
-    TestBed.runInInjectionContext(() => guard({} as never, { url: '/products' } as never));
+  const run = (guard: CanActivateFn, url = '/products') =>
+    TestBed.runInInjectionContext(() => guard({} as never, { url } as never));
 
   it('authGuard allows a session', () => {
     seedAdmin();
@@ -40,9 +40,10 @@ describe('route guards', () => {
   });
 
   it('authGuard redirects to login when there is no session', () => {
-    const result = run(authGuard);
+    const result = run(authGuard, '/reports');
+
     expect(result).toBeInstanceOf(UrlTree);
-    expect((result as UrlTree).toString()).toContain('/login');
+    expect((result as UrlTree).toString()).toBe('/login?returnUrl=%2Freports');
   });
 
   it('adminGuard allows an administrator', () => {
@@ -50,9 +51,27 @@ describe('route guards', () => {
     expect(run(adminGuard)).toBe(true);
   });
 
-  it('adminGuard drops a customer and redirects to login', () => {
+  it('adminGuard drops an unauthenticated visitor and redirects to login', () => {
+    const result = run(adminGuard, '/inventory');
+
+    expect(result).toBeInstanceOf(UrlTree);
+    expect((result as UrlTree).toString()).toBe('/login?returnUrl=%2Finventory');
+  });
+
+  it('adminGuard drops a customer, clears the session and redirects to login', () => {
     seedCustomer();
+    const result = run(adminGuard, '/reports');
+
+    expect(result).toBeInstanceOf(UrlTree);
+    expect((result as UrlTree).toString()).toBe('/login?returnUrl=%2Freports');
+    expect(localStorage.getItem(ACCESS_KEY)).toBeNull();
+    expect(localStorage.getItem(USER_KEY)).toBeNull();
+  });
+
+  it('adminGuard rejects a token without a stored admin identity', () => {
+    localStorage.setItem(ACCESS_KEY, 'stale-token');
     const result = run(adminGuard);
+
     expect(result).toBeInstanceOf(UrlTree);
     expect(localStorage.getItem(ACCESS_KEY)).toBeNull();
   });
@@ -65,6 +84,11 @@ describe('route guards', () => {
   });
 
   it('guestGuard lets a visitor reach the login page', () => {
+    expect(run(guestGuard)).toBe(true);
+  });
+
+  it('guestGuard allows a customer to reach the admin login page', () => {
+    seedCustomer();
     expect(run(guestGuard)).toBe(true);
   });
 });
